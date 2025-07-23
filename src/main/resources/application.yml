@@ -1,0 +1,37 @@
+spring:
+  cloud:
+    stream:
+      bindings:
+        output:
+          destination:  orgChangeTopic
+          content-type: application/json
+      kafka:
+        binder:
+          zkNodes: localhost:2181
+          brokers: localhost:9092
+
+server:
+  port: 8102
+  shutdown: graceful
+
+security:
+  oauth2:
+    resource:
+      userInfoUri: https://ops-test.fracpro.ai/api/auth/user
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    enabled: false
+    serviceUrl:
+      defaultZone: ${EUREKASERVER_URI}
+
+#Setting the logging levels for the service
+logging:
+  level:
+    com.netflix: WARN
+    org.springframework.web: WARN
+    com.carbo: DEBUG
