@@ -30,3 +30,21 @@ Scenario: Validate tooltip presence in search box
     Then the tooltip should be displayed when hovering over the search box
     And the tooltip should accurately describe available search options
     And the tooltip should disappear when not hovering
+
+@scenario_AddChemical
+Scenario: Add Acid/Additives
+    Given the user enters a valid email address into the Email Address input field
+    And the user enters a valid password into the Password input field
+    When the user clicks on the Submit button
+    And the user clicks on the Jobs sidebar
+    And the user clicks on Table
+    And the user clicks on Set as Current Job
+    And the user clicks on Set as Current Well
+    And the user clicks on Set as Current Stage
+    And the user clicks on View Detail on Chemicals tab
+    And the user clicks on Add Acid/Additives button
+    And the user clicks on name dropdown
+    And the user selects an option from the name dropdown
+    And the user enters a numeric value into the Design Concentration input field
+    And the user enters a numeric value into the Designed Volume per Stage input field
+    Then the user clicks on Add button
