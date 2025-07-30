@@ -1,18 +1,20 @@
+
 buildscript {
     dependencies {
-        classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0')
+        classpath 'gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0'
     }
 }
 
 plugins {
     id 'org.springframework.boot' version '2.2.9.RELEASE'
     id 'java'
+    id 'jacoco'
 }
 
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'com.palantir.docker'
 
-group='fracproops.azurecr.io'
+group = 'fracproops.azurecr.io'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
 
@@ -36,11 +38,12 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
 
     implementation 'org.springframework.boot:spring-boot-starter-security'
-//    implementation 'org.springframework.cloud:spring-cloud-sleuth-zipkin'
+    implementation 'io.springfox:springfox-swagger2:2.9.2'
+    implementation 'io.springfox:springfox-swagger-ui:2.9.2'
 
-    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     implementation 'org.springframework.security.oauth.boot:spring-security-oauth2-autoconfigure'
     implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
@@ -51,8 +54,23 @@ dependencyManagement {
     }
 }
 
+// Fix for "command line too long" on Windows (use Jar manifest instead of classpath on command line)
+bootJar {
+    launchScript()
+}
+
+jar {
+    manifest {
+        attributes(
+                'Class-Path': configurations.runtimeClasspath.files.collect { it.toURI().toURL().toString() }.join(' ')
+        )
+    }
+}
+
 task unpack(type: Copy) {
     dependsOn bootJar
+    from(zipTree(tasks.bootJar.outputs.files.singleFile))
+    into("$buildDir/dependency")
 }
 
 docker {
@@ -60,6 +78,31 @@ docker {
     files 'run.sh'
     copySpec.from(tasks.unpack.outputs).into(".")
     copySpec.from(tasks.bootJar.outputs.files.singleFile).into(".")
-    buildArgs(['JAR_FILE': "$bootJar.archiveName"
-    ])
+    buildArgs(['JAR_FILE': "$bootJar.archiveName"])
 }
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+test {
+    useJUnitPlatform()
+    jacoco {
+        enabled = true
+        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
+    }
+    // Optional: to avoid long command line args on test classpath (same issue)
+    systemProperty 'java.awt.headless', 'true'
+}
+
+// Generate coverage reports after test
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+check.dependsOn jacocoTestReport
